@@ -8,7 +8,7 @@ console.log(process.env.DB_USER)
 app.use(cors());
 app.use(express.json());
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.mq5kn.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -31,6 +31,7 @@ async function run() {
     const database = client.db("bistroDb");
     const menucollection = database.collection("menu");
     const reviewscollection = database.collection("reviews");
+    const cartscollection = database.collection("carts");
 
 
 
@@ -42,6 +43,30 @@ async function run() {
         const result=await reviewscollection.find().toArray()
         res.send(result)
     })
+  app.post('/carts',async(req,res)=>{
+       const cartItem=req.body
+       const result= await cartscollection.insertOne(cartItem)
+       res.send(result)
+  })
+  app.get('/carts',async(req,res)=>{
+    const email=req.query.email
+    const query={useremail:email}
+    const result=await cartscollection.find(query).toArray()
+    res.send(result)
+})
+app.delete('/cards/:id',async(req,res)=>{
+    const id=req.params.id
+    const query={_id:new ObjectId(id)}
+    const result=await cartscollection.deleteOne(query)
+    res.send(result)
+})
+
+
+
+
+
+
+
 
   } finally {
     // Ensures that the client will close when you finish/error
