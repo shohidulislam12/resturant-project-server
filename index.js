@@ -72,9 +72,45 @@ const verifyAdmin=async(req,res,next)=>{
   }
   next()
 }
+// delete menu 
+app.delete('/menu/:id',verifyToken,verifyAdmin,async(req,res)=>{
+  const id=req.params.id
+  const query={_id:new ObjectId(id)}
+  const result=await menucollection.deleteOne(query)
+  res.send(result)
+})
+//specisic id menu 
+app.get('/menu/:id',async(req,res)=>{
+  const id=req.params.id
+  const query={_id:new ObjectId(id)}
+  const result=await menucollection.findOne(query)
+  res.send(result)
+})
+// patch methode 
+app.patch('/menu/:id',async(req,res)=>{
+  const id=req.params.id
+  const  item=req.body
+  const query={_id:new ObjectId(id)}
+const updateDoc={
+  $set:{
+    name:item.name,
+    category:item.category,
+    price:item.price,
+    recipe:item.recipe,
+    image:item.image
+  }
+}
+
+  const result=await menucollection.updateOne(query,updateDoc)
+  res.send(result)
+})
 
 
-
+app.post("/menu",verifyToken,verifyAdmin, async (req, res) => {
+  const menuitem=req.body;
+  const result = await menucollection.insertOne(menuitem)
+  res.send(result);
+});
     
     app.get("/menu", async (req, res) => {
       const result = await menucollection.find().toArray();
@@ -115,18 +151,18 @@ const verifyAdmin=async(req,res,next)=>{
       res.send(result);
     });
     // get users
-    app.get("/users",verifyAdmin, verifyToken, async (req, res) => {
+    app.get("/users",verifyToken,verifyAdmin, async (req, res) => {
       const result = await usercollection.find().toArray();
       res.send(result);
     });
     // menu api
-    app.delete("/user/:id",verifyAdmin,verifyToken, async (req, res) => {
+    app.delete("/user/:id",verifyToken,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await usercollection.deleteOne(query);
       res.send(result);
     });
-    app.patch("/users/admin/:id",verifyAdmin,verifyToken, async (req, res) => {
+    app.patch("/users/admin/:id",verifyToken,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const updateaDoc = {
