@@ -3,6 +3,7 @@ const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
 require("dotenv").config();
+const stripe = require('stripe')(process.env.Stripe_secret);
 console.log(process.env.DB_USER);
 // Middleware
 app.use(cors());
@@ -35,6 +36,7 @@ async function run() {
     const reviewscollection = database.collection("reviews");
     const cartscollection = database.collection("carts");
     const usercollection = database.collection("users");
+    const transactioncollection = database.collection("transaction");
 
     // jwr api
 
@@ -193,8 +195,36 @@ res.send({admin})
 })
 
 
-
-
+// payment intend
+app.post('/creat-payment-intent',async(req,res)=>{
+  const {price}=req.body
+  const amount=parseInt(price*100);
+  const paymentIntent= await stripe.paymentIntents.create({
+    amount:amount,
+    currency:'usd',
+payment_method_types:['card']
+  });
+  res.send({
+    clientSecret:paymentIntent.client_secret
+  })
+})
+// payment
+app.post('/payment',async(req,res)=>{
+  const payment=req.body
+  const result=await transactioncollection.insertOne(payment)
+  const query={_id:{
+    $in:payment.cardIds.map(id=>new ObjectId(id))
+  }}
+  const deleteresult=await cartscollection.deleteMany(query)
+  console.log(result,deleteresult)
+})
+app.get('/paymenthistory/:email',verifyToken,async(req,res)=>{
+ 
+const email=req.params.email
+const query={email}
+  const result=await transactioncollection.find(query).toArray()
+  res.send(result)
+})
 
 
   } finally {
