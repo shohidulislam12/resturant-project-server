@@ -2,7 +2,10 @@
   "name": "bistro-resturent-server",
   "version": "1.0.0",
   "main": "index.js",
+
+
   "scripts": {
+    "starts":"node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",

@@ -3,7 +3,7 @@ const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
 require("dotenv").config();
-const stripe = require('stripe')(process.env.Stripe_secret);
+const stripe = require("stripe")(process.env.Stripe_secret);
 console.log(process.env.DB_USER);
 // Middleware
 app.use(cors());
@@ -24,12 +24,9 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    //await client.connect();
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+   // await client.db("admin").command({ ping: 1 })
 
     const database = client.db("bistroDb");
     const menucollection = database.collection("menu");
@@ -63,57 +60,56 @@ async function run() {
         next();
       });
     };
-// verify admin after verify token
-const verifyAdmin=async(req,res,next)=>{
-  const email=req.decoded.email
-  const query={email:email}
-  const user=await usercollection.findOne(query)
-  const isAdmin=user?.role==="admin"
-  if(!isAdmin){
-    return res.status(403).send({messsage:'forbidden access'})
-  }
-  next()
-}
-// delete menu 
-app.delete('/menu/:id',verifyToken,verifyAdmin,async(req,res)=>{
-  const id=req.params.id
-  const query={_id:new ObjectId(id)}
-  const result=await menucollection.deleteOne(query)
-  res.send(result)
-})
-//specisic id menu 
-app.get('/menu/:id',async(req,res)=>{
-  const id=req.params.id
-  const query={_id:new ObjectId(id)}
-  const result=await menucollection.findOne(query)
-  res.send(result)
-})
-// patch methode 
-app.patch('/menu/:id',async(req,res)=>{
-  const id=req.params.id
-  const  item=req.body
-  const query={_id:new ObjectId(id)}
-const updateDoc={
-  $set:{
-    name:item.name,
-    category:item.category,
-    price:item.price,
-    recipe:item.recipe,
-    image:item.image
-  }
-}
+    // verify admin after verify token
+    const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await usercollection.findOne(query);
+      const isAdmin = user?.role === "admin";
+      if (!isAdmin) {
+        return res.status(403).send({ messsage: "forbidden access" });
+      }
+      next();
+    };
+    // delete menu
+    app.delete("/menu/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menucollection.deleteOne(query);
+      res.send(result);
+    });
+    //specisic id menu
+    app.get("/menu/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await menucollection.findOne(query);
+      res.send(result);
+    });
+    // patch methode
+    app.patch("/menu/:id", async (req, res) => {
+      const id = req.params.id;
+      const item = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          name: item.name,
+          category: item.category,
+          price: item.price,
+          recipe: item.recipe,
+          image: item.image,
+        },
+      };
 
-  const result=await menucollection.updateOne(query,updateDoc)
-  res.send(result)
-})
+      const result = await menucollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
 
+    app.post("/menu", verifyToken, verifyAdmin, async (req, res) => {
+      const menuitem = req.body;
+      const result = await menucollection.insertOne(menuitem);
+      res.send(result);
+    });
 
-app.post("/menu",verifyToken,verifyAdmin, async (req, res) => {
-  const menuitem=req.body;
-  const result = await menucollection.insertOne(menuitem)
-  res.send(result);
-});
-    
     app.get("/menu", async (req, res) => {
       const result = await menucollection.find().toArray();
       res.send(result);
@@ -143,9 +139,11 @@ app.post("/menu",verifyToken,verifyAdmin, async (req, res) => {
     app.post("/users", async (req, res) => {
       const data = req.body;
       const email = data.email;
+      console.log("emailfromlogin", email);
       // check user if exist
-      const query = { email };
+      const query = { email: email };
       const isexistingUser = await usercollection.findOne(query);
+      console.log("check user", isexistingUser);
       if (isexistingUser) {
         return res.send({ messsage: "user Already Exist" });
       }
@@ -153,80 +151,147 @@ app.post("/menu",verifyToken,verifyAdmin, async (req, res) => {
       res.send(result);
     });
     // get users
-    app.get("/users",verifyToken,verifyAdmin, async (req, res) => {
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
       const result = await usercollection.find().toArray();
       res.send(result);
     });
     // menu api
-    app.delete("/user/:id",verifyToken,verifyAdmin, async (req, res) => {
+    app.delete("/user/:id", verifyToken, verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await usercollection.deleteOne(query);
       res.send(result);
     });
-    app.patch("/users/admin/:id",verifyToken,verifyAdmin, async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) };
-      const updateaDoc = {
-        $set: {
-          role: "admin",
-        },
-      };
-      const result = await usercollection.updateOne(query, updateaDoc);
-      res.send(result);
+    app.patch(
+      "/users/admin/:id",
+      verifyToken,
+      verifyAdmin,
+      async (req, res) => {
+        const id = req.params.id;
+        const query = { _id: new ObjectId(id) };
+        const updateaDoc = {
+          $set: {
+            role: "admin",
+          },
+        };
+        const result = await usercollection.updateOne(query, updateaDoc);
+        res.send(result);
+      }
+    );
+
+    //
+    app.get("/users/admin/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      if (email !== req.decoded.email) {
+        return res.status(403).send({ messsage: "unauthorized access" });
+      }
+
+      const query = { email: email };
+      const user = await usercollection.findOne(query);
+      let admin = false;
+      if (user?.role === "admin") {
+        admin = true;
+      }
+
+      res.send({ admin });
     });
 
-// 
-app.get('/users/admin/:email',verifyToken,async(req,res)=>{
-  const  email=req.params.email
-  if(email!==req.decoded.email){
-    return res.status(403).send({messsage:"unauthorized access"})
-  }
+    // payment intend
+    app.post("/creat-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+    // payment
+    app.post("/payment", async (req, res) => {
+      const payment = req.body;
+      const result = await transactioncollection.insertOne(payment);
+      const query = {
+        _id: {
+          $in: payment.cardIds.map((id) => new ObjectId(id)),
+        },
+      };
+      const deleteresult = await cartscollection.deleteMany(query);
+      console.log(result, deleteresult);
+    });
+    app.get("/paymenthistory/:email", verifyToken, async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await transactioncollection.find(query).toArray();
+      res.send(result);
+    });
+    //stats
+    app.get("/admin-stats",verifyToken,verifyAdmin, async (req, res) => {
+      const users = await usercollection.estimatedDocumentCount();
+      const menuItems = await menucollection.estimatedDocumentCount();
+      const orders = await transactioncollection.estimatedDocumentCount();
+      const payments = await transactioncollection.find().toArray();
+      // const revenue=payments.reduce( (total,payment)=>total+(payment.price||0),0)
+      const result = await transactioncollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalRevinue: {
+                $sum: "$price",
+              },
+            },
+          },
+        ])
+        .toArray();
+      const revenue = result.length > 0 ? result[0].totalRevinue : 0;
 
-const query={email:email}
-const user=await usercollection.findOne(query)
-let admin=false;
-if (user?.role === 'admin') {
-  admin = true;
-}
-
-res.send({admin})
-
-})
-
-
-// payment intend
-app.post('/creat-payment-intent',async(req,res)=>{
-  const {price}=req.body
-  const amount=parseInt(price*100);
-  const paymentIntent= await stripe.paymentIntents.create({
-    amount:amount,
-    currency:'usd',
-payment_method_types:['card']
-  });
-  res.send({
-    clientSecret:paymentIntent.client_secret
-  })
-})
-// payment
-app.post('/payment',async(req,res)=>{
-  const payment=req.body
-  const result=await transactioncollection.insertOne(payment)
-  const query={_id:{
-    $in:payment.cardIds.map(id=>new ObjectId(id))
-  }}
-  const deleteresult=await cartscollection.deleteMany(query)
-  console.log(result,deleteresult)
-})
-app.get('/paymenthistory/:email',verifyToken,async(req,res)=>{
- 
-const email=req.params.email
-const query={email}
-  const result=await transactioncollection.find(query).toArray()
-  res.send(result)
-})
-
-
+      res.send({
+        users,
+        menuItems,
+        orders,
+        revenue,
+      });
+    });
+    // non efficient way //
+    app.get("/order-stats",verifyToken,verifyAdmin, async (req, res) => {
+      const result = await transactioncollection
+        .aggregate([
+          {
+            $unwind: "$menuItemId",
+          },
+          {
+            $lookup: {
+              from: "menu",
+              localField: "menuItemId",
+              foreignField:'_id',
+              as:'menuItems'
+            },
+          },{
+            $unwind:'$menuItems'
+          },
+          {
+            $group:{
+              _id:'$menuItems.category',
+              quantity:{$sum:1},
+              revenue:{$sum: '$menuItems.price'}
+            }
+          },
+          {
+            $project:{
+              _id:0,
+              category:'$_id',
+              quantity:'$quantity',
+              revenue:'$revenue'
+            }
+          }
+      
+        ])
+        .toArray();
+      res.send(result);
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     //await client.close();
